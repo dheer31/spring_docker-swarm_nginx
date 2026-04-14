@@ -4,64 +4,43 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: app_mysql
-    restart: always
-
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-
     volumes:
       - db_data:/var/lib/mysql
-
     networks:
       - app_network
 
-    mem_limit: 1g
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
     image: app_image:latest
-    container_name: app_container
-
     depends_on:
       - db
 
     ports:
-      - "${APP_PORT}:${APP_PORT}"
+      - "8081:8081"
 
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
 
-    restart: always
-
     networks:
       - app_network
 
-    mem_limit: 700m
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
+    deploy:
+      replicas: 2   # 🔥 Scaling
+      restart_policy:
+        condition: on-failure
 
 volumes:
   db_data:
 
 networks:
   app_network:
-    driver: bridge
+    driver: overlay
